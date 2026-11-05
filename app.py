@@ -472,8 +472,11 @@ def senhas_guiadas():
         palavras = [''.join(w) for w in itertools.product(alfabeto, repeat=n)]
         aceitas = [w for w in palavras if all(w.count(s) % 2 == 0 for s in especiais)]
         st.subheader("Veja as senhas válidas")
-        fichas(aceitas or ["Nenhuma senha atende à regra"])
-        st.caption(f"Exibindo todas as {len(aceitas)} senhas válidas.")
+        fichas(aceitas[:12] or ["Nenhuma senha atende à regra"])
+        st.caption(f"Exibindo {min(12, len(aceitas))} de {len(aceitas)} senhas válidas.")
+        if len(aceitas) > 12:
+            with st.expander("Ver todas as senhas válidas"):
+                fichas(aceitas)
         rejeitadas = [w for w in palavras if w not in aceitas]
         if rejeitadas:
             st.caption("Exemplos rejeitados: " + ", ".join(rejeitadas[:6]) + ". Ocorre um símbolo restrito um número ímpar de vezes.")
@@ -562,8 +565,10 @@ def mudar_etapa(delta):
 def main():
     st.set_page_config(page_title="FGO × FGE · Equipe 7", page_icon="🧮", layout="wide", initial_sidebar_state="collapsed")
     st.markdown('''<style>
-    .block-container {max-width:1120px; padding-top:2rem; padding-bottom:2rem;}
-    h1 {font-size:2.4rem !important;} h2 {font-size:1.9rem !important;}
+    .block-container {max-width:1120px; padding-top:4rem; padding-bottom:2rem;}
+    [data-testid="stVerticalBlock"] {gap:.75rem;}
+    [data-testid="stDivider"] {margin:.25rem 0;}
+    h1 {font-size:2rem !important;} h2 {font-size:1.9rem !important;}
     [data-testid="stMetric"] {border:1px solid #14b8a650; border-radius:14px; padding:14px; background:#14b8a60a;}
     .destaque {border-left:4px solid #14b8a6; background:#14b8a612; padding:14px 20px; border-radius:8px; margin:16px 0;}
     .destaque small {font-weight:700; letter-spacing:.08em;}
@@ -582,9 +587,8 @@ def main():
     if modo == "Laboratório completo":
         laboratorio()
         return
-    st.caption("EQUIPE 7 / FUNÇÕES GERADORAS E COMPUTAÇÃO")
-    st.title("Contar possibilidades. Entender estruturas.")
-    st.caption("Um percurso em 5 etapas: conceito, matemática e três demonstrações práticas.")
+    st.title("FGO × FGE")
+    st.caption("Equipe 7 · Estruturas rotuladas · Da contagem às aplicações em computação")
     st.session_state.setdefault("etapa_guia", 0)
     etapa = st.session_state["etapa_guia"]
     st.progress((etapa + 1) / 5, text=f"Etapa {etapa+1} de 5 · {ETAPAS[etapa].split(' · ')[1]}")
