@@ -590,13 +590,13 @@ def grafico_escala(n):
     maximo = max(4, 2 * math.ceil(math.log10(8**n) / 2))
     def xy(i, valor):
         return left + (i-1) * w / (n-1), top + h * (1-math.log10(valor)/maximo)
-    partes = [f'<svg viewBox="0 0 820 320" role="img" aria-label="Crescimento exponencial das candidatas e quadrático das parcelas FGE" style="width:100%;display:block;font-family:sans-serif">']
+    partes = [f'<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 820 320" role="img" aria-label="Crescimento exponencial das candidatas e quadrático das parcelas FGE" style="width:100%;display:block;font-family:sans-serif">']
     for expoente in range(0, maximo+1, 2):
         y = top + h * (1-expoente/maximo)
-        partes.append(f'<line x1="70" x2="790" y1="{y}" y2="{y}" stroke="currentColor" opacity=".15"/><text x="58" y="{y+5}" text-anchor="end" fill="currentColor" font-size="13">10^{expoente}</text>')
+        partes.append(f'<line x1="70" x2="790" y1="{y}" y2="{y}" stroke="#64748b" opacity=".15"/><text x="58" y="{y+5}" text-anchor="end" fill="#64748b" font-size="13">10^{expoente}</text>')
     for i in range(1, n+1):
         x, _ = xy(i, 1)
-        partes.append(f'<text x="{x}" y="267" text-anchor="middle" fill="currentColor" font-size="13">{i}</text>')
+        partes.append(f'<text x="{x}" y="267" text-anchor="middle" fill="#64748b" font-size="13">{i}</text>')
     for cor, funcao, nome in [("#f59e0b", lambda i: 8**i, "Candidatas"),
                               ("#14b8a6", lambda i: 8*(i+1)*(i+2)//2, "Parcelas FGE")]:
         pontos = ' '.join(f'{xy(i, funcao(i))[0]},{xy(i, funcao(i))[1]}' for i in range(1, n+1))
@@ -604,10 +604,10 @@ def grafico_escala(n):
         for i in range(1, n+1):
             x, y = xy(i, funcao(i))
             partes.append(f'<circle cx="{x}" cy="{y}" r="4" fill="{cor}"><title>N={i}: {nome} = {numero(funcao(i))}</title></circle>')
-    partes.extend(['<text x="430" y="292" text-anchor="middle" fill="currentColor" font-size="14">Posições da senha (N)</text>',
+    partes.extend(['<text x="430" y="292" text-anchor="middle" fill="#64748b" font-size="14">Posições da senha (N)</text>',
                    '<text x="85" y="316" fill="#f59e0b" font-size="14">● Candidatas · 8ⁿ</text>',
                    '<text x="310" y="316" fill="#14b8a6" font-size="14">● Parcelas · 8(N+1)(N+2)/2</text>', '</svg>'])
-    st.html(''.join(partes))
+    st.image(''.join(partes), width="stretch")
     st.caption("Eixo vertical logarítmico: cada intervalo da grade multiplica a quantidade por 100. A curva laranja sobe rapidamente; a verde cresce de forma quadrática.")
 
 
