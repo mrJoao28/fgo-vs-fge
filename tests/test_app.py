@@ -37,6 +37,7 @@ def test_guided_presentation():
     at = AppTest.from_file(Path(__file__).resolve().parents[1] / 'app.py', default_timeout=20).run()
     assert not at.exception
     assert [x.value for x in at.metric] == ['3', '4']
+    assert not any('fala' in e.label.lower() or 'banca' in e.label.lower() for e in at.expander)
     for step in range(1, 5):
         at.button[1].click().run()
         assert not at.exception
@@ -51,8 +52,18 @@ def test_guided_presentation():
     at.slider(key='g_k').set_value(2).run()
     assert not at.exception
     at.selectbox(key='etapa_guia').select(3).run()
-    at.toggle(key='ids_guiados').set_value(True).run()
-    assert [x.value for x in at.metric] == ['3', '4']
+    assert [x.value for x in at.metric] == ['32', '16', '3']
+    at.radio(key='ruido_canal').set_value('Inverter 1 bit').run()
+    assert any('ERRO DETECTADO' in e.value for e in at.error)
+    at.radio(key='ruido_canal').set_value('Inverter 2 bits').run()
+    assert any('ERRO NÃO DETECTADO' in e.value for e in at.warning)
+    at.radio(key='ruido_canal').set_value('Escolher posições').run()
+    at.selectbox(key='mensagem_canal').select('1011010').run()
+    at.multiselect(key='bits_canal').set_value([1, 3, 8]).run()
+    assert any('ERRO DETECTADO' in e.value for e in at.error)
+    at.selectbox(key='mensagem_canal').select('1011').run()
+    assert not at.exception
+    assert at.multiselect(key='bits_canal').value == [1, 3]
     at.selectbox(key='etapa_guia').select(4).run()
     for n in (4, 15):
         at.select_slider(key='escala_n').set_value(n).run()
@@ -66,3 +77,20 @@ def test_full_laboratory():
     at = AppTest.from_file(Path(__file__).resolve().parents[1] / 'app.py', default_timeout=30).run()
     at.sidebar.radio[0].set_value('Laboratório completo').run()
     assert not at.exception
+
+
+def test_channel_error_detection_exhaustively():
+    for size in range(2, 6):
+        for bits in itertools.product("01", repeat=size):
+            data = ''.join(bits)
+            for mask in itertools.product((0, 1), repeat=size+1):
+                flips = [i+1 for i, bit in enumerate(mask) if bit]
+                sent, received, detected = app.transmitir(data, flips)
+                assert sent[:-1] == data
+                assert sent.count("1") % 2 == 0
+                assert detected == (len(flips) % 2 == 1)
+                assert sum(a != b for a, b in zip(sent, received)) == len(flips)
+        n = size + 1
+        codewords = {app.transmitir(''.join(bits))[0] for bits in itertools.product("01", repeat=size)}
+        assert len(codewords) == app.senhas_modelo(n, 2, 1, True)[n] == 2**size
+        assert sum(math.comb(n, r) for r in range(0, n+1, 2)) == len(codewords)
