@@ -18,16 +18,26 @@ A aplicação abre na **Apresentação guiada**. Use **Próxima →**, **← Ant
 | 1. A ideia | 2 min | AA, AB, BA, BB são quatro senhas; há três perfis de quantidades. Pergunte se AB e BA são diferentes. |
 | 2. A matemática | 3 min | Defina FGO e FGE, explique a extração do coeficiente e o fator n!. Mostre que a convolução FGE distribui rótulos com binomiais. |
 | 3. Senhas | 2 min | Selecione “Com regra”: K=3, N=4, P=1. Há 81 candidatas, 41 válidas e 9 perfis. Mostre as senhas e a verificação independente. |
-| 4. Comunicação | 1,5 min | Ligue os IDs: dois perfis tornam-se quatro partições de dados rotulados. |
+| 4. Comunicação | 1,5 min | Transmita 1011 com paridade; inverta um bit e depois dois. Abra a contagem FGE dos quadros válidos. |
 | 5. Escala e código | 1,5 min | Aumente N de 4 para 15. Compare o crescimento das candidatas com o número de parcelas das convoluções. Abra o código se houver tempo. |
 
-As etapas 3–5 correspondem a 50% do tempo. Cada etapa tem uma sugestão de fala recolhida. O tempo real deve ser adaptado ao limite definido pelo professor.
+As etapas 3–5 correspondem a 50% do tempo. O tempo real deve ser adaptado ao limite definido pelo professor.
 
 ## Avaliação da versão inicial e mudanças
 
 A base matemática já possuía convolução inteira, filtro de paridade independente, força bruta com limites e distinção entre partições inteiras e de conjuntos. A tela, porém, mostrava vários gráficos, controles e métricas antes de apresentar um exemplo concreto. Os resultados de formulários também podiam permanecer associados a parâmetros antigos sem um aviso claro.
 
 O percurso novo começa com objetos visíveis e números pequenos. Mostra uma etapa por vez e três aplicações práticas, mantendo os detalhes técnicos em expansores ou no laboratório. Os controles do percurso atualizam os resultados imediatamente. O laboratório avisa quando os parâmetros não correspondem à execução salva; seu exemplo inicial de pacotes foi reduzido para evitar uma busca longa ao abrir.
+
+## Comunicação e comparação de crescimento
+
+A etapa de comunicação demonstra um código de paridade par sistemático: acrescenta um bit de redundância, permite inversões no canal e mostra a verificação XOR no receptor. Um número ímpar de inversões é detectado; um número par pode alterar a mensagem sem violar a paridade. O esquema não localiza nem corrige erros.
+
+A segunda aba relaciona os quadros válidos à FGE `cosh(x) exp(x)`. Cada perfil com r bits 1 representa `C(n,r)` sequências. A soma nos pesos pares vale `2^(n-1)` para n ≥ 1. A tela diferencia essas mensagens dos perfis contados pelo produto FGO por símbolo. O agrupamento de dados anterior continua como exemplo complementar recolhido.
+
+O gráfico de escala usa SVG com proporções fixas e eixo logarítmico explícito para evitar o achatamento no ambiente incorporado. Cada intervalo vertical multiplica os valores por 100. Os painéis comparam candidatas de enumeração com parcelas de convolução, sem apresentar essa razão como aceleração medida.
+
+As sugestões de fala, o rodapé de tempo e as perguntas da banca foram removidos da aplicação. Este README mantém o roteiro de preparação.
 
 ## Precisão matemática e limites das aplicações
 
@@ -54,3 +64,6 @@ Os testes comparam os modelos de senhas com enumeração independente de palavra
 
 - Flajolet e Sedgewick, *Analytic Combinatorics*, capítulos I e II: https://ac.cs.princeton.edu/home/
 - Sedgewick e Flajolet, *An Introduction to the Analysis of Algorithms*, Generating Functions: https://aofa.cs.princeton.edu/30gf/
+
+- Comunicação: https://www.ece.unb.ca/tervo/ece4253/ecc.shtml
+- MIT, detecção de erros: https://ocw.mit.edu/courses/6-004-computation-structures-spring-2017/pages/c1/c1s1/

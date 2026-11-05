@@ -396,11 +396,6 @@ def fichas(palavras):
         f'<span class="ficha">{palavra}</span>' for palavra in palavras) + '</div>', unsafe_allow_html=True)
 
 
-def fala(texto):
-    with st.expander("Sugestão de fala para esta etapa"):
-        st.write(texto)
-
-
 def ideia():
     st.header("AB e BA: uma ou duas possibilidades?")
     st.write("Uma senha tem **2 posições** e usa os símbolos **A e B**, com repetição permitida.")
@@ -417,7 +412,6 @@ def ideia():
         st.caption("Posição 1 e posição 2 são rótulos distintos.")
     destaque("A PERGUNTA QUE ESCOLHE O MODELO", "O que torna duas soluções diferentes?")
     st.info("O produto FGO por símbolo conta 3 perfis. O produto FGE por símbolo conta 4 senhas, ao distribuir as posições. A diferença está na construção usada.")
-    fala("Se eu trocar AB por BA, continuo com a mesma quantidade de letras, mas a senha muda. Vamos ver como a matemática representa essa diferença.")
 
 
 def matematica():
@@ -440,7 +434,6 @@ def matematica():
         st.write("Escolhemos quais j dos n rótulos vão para o primeiro fator. O código guarda aₙ diretamente, usando inteiros e sem erros de arredondamento.")
         st.latex(r"\text{Para quantidades fixas:}\quad \frac{n!}{n_1!n_2!\cdots n_K!}")
     st.warning("Evite dizer ‘ordem importa → sempre FGE’. A FGO 1/(1−Kx) também conta as Kⁿ palavras de tamanho n. A FGE facilita a composição de estruturas rotuladas e as restrições por símbolo.")
-    fala("As duas funções podem representar a mesma sequência de contagens. A FGE divide os termos por n fatorial e, no produto, escolhe como distribuir os rótulos entre as partes.")
 
 
 def senhas_guiadas():
@@ -492,38 +485,130 @@ def senhas_guiadas():
         st.latex(r"a_n=\frac{1}{2^P}\sum_{j=0}^P\binom{P}{j}(K-2j)^n")
     destaque("CONEXÃO COM CRIPTOGRAFIA", f"A regra deixa {numero(validas)} de {numero(total)} candidatas para uma busca exaustiva.")
     st.caption("Modelo didático de espaço de busca: paridade não é criptografia segura. log₂(contagem) mede bits de espaço de busca apenas sob escolha uniforme; senhas humanas não seguem essa hipótese.")
-    fala("Primeiro contamos todas as candidatas. Depois aplicamos a regra. A FGE chega à contagem sem testar cada senha. Uma restrição também reduz o espaço que um atacante precisaria explorar.")
+
+
+def transmitir(dados, inversoes=()):
+    """Código de paridade par sistemático; posições do canal são baseadas em 1."""
+    if not dados or any(bit not in "01" for bit in dados):
+        raise ValueError("A mensagem deve conter apenas bits.")
+    enviado = dados + str(dados.count("1") % 2)
+    posicoes = set(inversoes)
+    if any(i < 1 or i > len(enviado) for i in posicoes):
+        raise ValueError("Posição fora do quadro.")
+    recebido = ''.join(str(1-int(bit)) if i in posicoes else bit
+                       for i, bit in enumerate(enviado, 1))
+    return enviado, recebido, recebido.count("1") % 2 == 1
+
+
+def quadro_bits(bits, alterados=()):
+    celulas = []
+    for i, bit in enumerate(bits, 1):
+        classe = "bit alterado" if i in alterados else ("bit paridade" if i == len(bits) else "bit")
+        rotulo = "P" if i == len(bits) else str(i)
+        celulas.append(f'<div class="{classe}"><small>{rotulo}</small><b>{bit}</b></div>')
+    st.markdown('<div class="quadro-bits">' + ''.join(celulas) + '</div>', unsafe_allow_html=True)
 
 
 def comunicacao_guiada():
-    st.header("Os dados têm identidade?")
-    st.write("Modelo de comunicação: agrupar unidades de dados em blocos de **1 ou 2**, sem ordenar os blocos nem os elementos dentro deles.")
-    rotulados = st.toggle("Distinguir os IDs dos dados", value=False, key="ids_guiados")
-    a, b = st.columns([1, 2])
-    with a:
-        st.metric("Unidades de dados", "3")
-        total = pacotes_fge(3, (1, 2))[3] if rotulados else pacotes_fgo(3, (1, 2))[3]
-        st.metric("Agrupamentos possíveis", str(total))
-        st.success("FGE · partições de um conjunto rotulado" if rotulados else "FGO · perfis de tamanhos")
-    with b:
-        st.subheader("Todos os agrupamentos")
-        if rotulados:
-            fichas(["{A} | {B} | {C}", "{A,B} | {C}", "{A,C} | {B}", "{B,C} | {A}"])
-            st.caption("A, B e C identificam unidades diferentes. Há três maneiras de escolher o par.")
+    st.header("Uma mensagem chegou com erro. Como perceber?")
+    st.write("O emissor acrescenta **um bit de paridade**. O receptor verifica se o total de bits 1 continua par.")
+    canal, contagem = st.tabs(["1 · Transmitir e provocar erros", "2 · Contar as mensagens com FGE"])
+    with canal:
+        a, b = st.columns(2)
+        dados = a.selectbox("Mensagem do emissor", ["1011", "0101", "1111", "0000", "101101", "1011010"],
+                           format_func=lambda x: f"{x} · {len(x)} bits de dados", key="mensagem_canal")
+        ruido = b.radio("Ruído no canal", ["Sem erro", "Inverter 1 bit", "Inverter 2 bits", "Escolher posições"],
+                        horizontal=True, key="ruido_canal")
+        n = len(dados) + 1
+        if ruido == "Escolher posições":
+            if "bits_canal" in st.session_state:
+                st.session_state["bits_canal"] = [i for i in st.session_state["bits_canal"] if i <= n]
+            inversoes = st.multiselect("Posições que serão invertidas", range(1, n+1), key="bits_canal",
+                                      format_func=lambda i: f"{i} · paridade" if i == n else f"{i} · dado")
         else:
-            fichas(["1 + 1 + 1", "1 + 2"])
-            st.caption("Sem IDs, só importa a quantidade de blocos de cada tamanho.")
-    destaque("OBSERVE A MUDANÇA", "O tamanho dos blocos é o mesmo. A identidade dos dados muda a contagem: de 2 para 4.")
-    with st.expander("Ver a modelagem matemática"):
-        st.latex(r"G(x)=\frac{1}{(1-x)(1-x^2)}\quad\Rightarrow\quad[x^3]G(x)=2")
-        st.latex(r"E(x)=\exp\left(x+\frac{x^2}{2!}\right)\quad\Rightarrow\quad3![x^3]E(x)=4")
-        st.write("É um modelo simplificado de agrupamento, não uma implementação de TCP. Pacotes contíguos de um fluxo, ordem de transmissão e cabeçalhos exigem outro modelo.")
-    fala("Sem identidade, temos dois perfis. Ao ligar os IDs, o par AB é diferente de AC e BC. Esse é um exemplo de FGE mesmo sem ordenar os pacotes: identidade e ordem são conceitos diferentes.")
+            inversoes = {"Sem erro": [], "Inverter 1 bit": [2], "Inverter 2 bits": [2, 3]}[ruido]
+        enviado, recebido, detectado = transmitir(dados, inversoes)
+        esq, meio, dir = st.columns([2, 1, 2])
+        with esq:
+            st.subheader("Emissor")
+            quadro_bits(enviado)
+            st.caption(f"{dados.count('1')} bits 1 nos dados → bit P = {enviado[-1]}. Total enviado: {enviado.count('1')} bits 1.")
+        with meio:
+            st.markdown('<div class="canal"><b>CANAL</b><span>→</span></div>', unsafe_allow_html=True)
+            st.caption(f"{len(inversoes)} bit(s) invertido(s)")
+        with dir:
+            st.subheader("Receptor")
+            quadro_bits(recebido, inversoes)
+            st.caption(f"Total recebido: {recebido.count('1')} bits 1 · {'ímpar' if detectado else 'par'}.")
+        if detectado:
+            st.error("ERRO DETECTADO · A paridade ficou ímpar. O receptor pode solicitar retransmissão.")
+        elif inversoes:
+            st.warning("ERRO NÃO DETECTADO · A mensagem mudou, mas duas inversões mantiveram a paridade par.")
+        else:
+            st.success("QUADRO ACEITO · A paridade está correta e nenhum bit foi alterado nesta simulação.")
+        st.caption("P = bit extra de paridade · vermelho = posição alterada. Um bit de paridade detecta qualquer quantidade ímpar de inversões; não localiza nem corrige o erro.")
+        st.code(f"enviado  = {enviado}\nrecebido = {recebido}\nverificação = XOR de todos os bits = {int(detectado)}", language="text")
+    with contagem:
+        n = len(dados) + 1
+        perfis = senhas_modelo(n, 2, 1, False)[n]
+        validos = senhas_modelo(n, 2, 1, True)[n]
+        st.write(f"O quadro tem **{n} posições distintas**: {n-1} bits de dados e 1 de paridade. Quantas sequências têm um número par de bits 1?")
+        a, b, c = st.columns(3)
+        a.metric("Todos os quadros · 2ⁿ", numero(2**n))
+        b.metric("Quadros válidos · FGE", numero(validos))
+        c.metric("Perfis de quantidades", numero(perfis))
+        st.write("**Mesmo perfil, mensagens diferentes:** estas sequências têm dois bits 1 em posições diferentes.")
+        fichas(['11'+'0'*(n-2), '101'+'0'*(n-3), '01'+'0'*(n-3)+'1'])
+        st.table(pd.DataFrame([{"Bits 1 (par)": r, "Bits 0": n-r,
+                               "Perfis": 1, "Sequências · C(n,r)": math.comb(n, r)}
+                              for r in range(0, n+1, 2)]))
+        destaque("QUANTIDADE × POSIÇÃO", f"O produto FGO por símbolo conta {perfis} perfis. A FGE distribui as posições e conta {numero(validos)} quadros válidos.")
+        with st.expander("Fórmulas e implementação"):
+            st.latex(r"E(x)=\underbrace{\cosh(x)}_{\text{quantidade par de uns}}\underbrace{e^x}_{\text{qualquer quantidade de zeros}}")
+            st.latex(r"a_n=n![x^n]E(x)=\sum_{r\;\mathrm{par}}\binom{n}{r}=2^{n-1}\quad(n\geq1)")
+            st.latex(r"\text{Produto FGO por símbolo: }\quad\frac{1}{(1-x^2)(1-x)}")
+            st.write("Cada perfil com r uns gera C(n,r) mensagens, pois escolhemos quais posições recebem 1. A FGE soma essas distribuições automaticamente.")
+            st.code('paridade = dados.count("1") % 2\nquadro = dados + str(paridade)\nerro_detectado = quadro_recebido.count("1") % 2 != 0', language="python")
+            st.caption("A FGO da sequência de contagens de quadros válidos também existe: (1−x)/(1−2x), incluindo o quadro vazio. O contraste acima é entre construções por símbolo.")
+        st.info(f"Um bit adicional permite verificar {numero(validos)} mensagens de {n-1} bits de dados. O receptor faz XOR em O(n), sem listar os quadros válidos.")
+    with st.expander("Agrupamento de dados rotulados · outro uso da FGE"):
+        st.write("Para três unidades A, B e C em blocos sem ordem de tamanho 1 ou 2, há dois perfis de tamanhos, mas quatro agrupamentos com IDs.")
+        fichas(["{A} | {B} | {C}", "{A,B} | {C}", "{A,C} | {B}", "{B,C} | {A}"])
+        st.latex(r"E(x)=\exp(x+x^2/2!),\qquad 3![x^3]E(x)=4")
+    with st.expander("Referências de comunicação"):
+        st.markdown("[MIT · Computation Structures: error detection](https://ocw.mit.edu/courses/6-004-computation-structures-spring-2017/pages/c1/c1s1/) · [University of New Brunswick · Parity and XOR](https://www.ece.unb.ca/tervo/ece4253/ecc.shtml)")
 
 
 @st.cache_data(show_spinner=False)
 def escala_calculada(n):
     return senhas_modelo(n, 8, 3, True)[n], senhas_fechada(n, 8, 3)
+
+
+def grafico_escala(n):
+    """Eixo log10 explícito: cada divisão vertical equivale a multiplicar por 100."""
+    w, h, left, top = 720, 220, 70, 25
+    maximo = max(4, 2 * math.ceil(math.log10(8**n) / 2))
+    def xy(i, valor):
+        return left + (i-1) * w / (n-1), top + h * (1-math.log10(valor)/maximo)
+    partes = [f'<svg viewBox="0 0 820 320" role="img" aria-label="Crescimento exponencial das candidatas e quadrático das parcelas FGE" style="width:100%;display:block;font-family:sans-serif">']
+    for expoente in range(0, maximo+1, 2):
+        y = top + h * (1-expoente/maximo)
+        partes.append(f'<line x1="70" x2="790" y1="{y}" y2="{y}" stroke="currentColor" opacity=".15"/><text x="58" y="{y+5}" text-anchor="end" fill="currentColor" font-size="13">10^{expoente}</text>')
+    for i in range(1, n+1):
+        x, _ = xy(i, 1)
+        partes.append(f'<text x="{x}" y="267" text-anchor="middle" fill="currentColor" font-size="13">{i}</text>')
+    for cor, funcao, nome in [("#f59e0b", lambda i: 8**i, "Candidatas"),
+                              ("#14b8a6", lambda i: 8*(i+1)*(i+2)//2, "Parcelas FGE")]:
+        pontos = ' '.join(f'{xy(i, funcao(i))[0]},{xy(i, funcao(i))[1]}' for i in range(1, n+1))
+        partes.append(f'<polyline points="{pontos}" fill="none" stroke="{cor}" stroke-width="3"/>')
+        for i in range(1, n+1):
+            x, y = xy(i, funcao(i))
+            partes.append(f'<circle cx="{x}" cy="{y}" r="4" fill="{cor}"><title>N={i}: {nome} = {numero(funcao(i))}</title></circle>')
+    partes.extend(['<text x="430" y="292" text-anchor="middle" fill="currentColor" font-size="14">Posições da senha (N)</text>',
+                   '<text x="85" y="316" fill="#f59e0b" font-size="14">● Candidatas · 8ⁿ</text>',
+                   '<text x="310" y="316" fill="#14b8a6" font-size="14">● Parcelas · 8(N+1)(N+2)/2</text>', '</svg>'])
+    st.html(''.join(partes))
+    st.caption("Eixo vertical logarítmico: cada intervalo da grade multiplica a quantidade por 100. A curva laranja sobe rapidamente; a verde cresce de forma quadrática.")
 
 
 def escala_guiada():
@@ -532,20 +617,23 @@ def escala_guiada():
     validas, confirmacao = escala_calculada(n)
     total = 8**n
     operacoes = 8 * (n+1) * (n+2) // 2
-    a, b, c = st.columns(3)
-    a.metric("Candidatas a testar", numero(total))
-    b.metric("Termos no produto FGE", numero(operacoes))
-    c.metric("Senhas válidas", numero(validas))
-    st.caption("Termos são parcelas das convoluções, não instruções de CPU; a força bruta ainda percorre as posições de cada candidata.")
-    dados = pd.DataFrame([{"N": i, "Quantidade": float(valor), "Trabalho": tipo, "Exato": numero(valor)}
-        for i in range(1, n+1) for tipo, valor in [
-            ("Candidatas · 8ⁿ", 8**i), ("Termos · produto FGE", 8*(i+1)*(i+2)//2)]])
-    grafico = alt.Chart(dados).mark_line(point=True, strokeWidth=3).encode(
-        x=alt.X("N:Q", axis=alt.Axis(tickMinStep=1), title="Posições da senha"),
-        y=alt.Y("Quantidade:Q", scale=alt.Scale(type="log"), title="Quantidade · escala logarítmica"),
-        color=alt.Color("Trabalho:N", scale=alt.Scale(range=["#f59e0b", "#14b8a6"]), legend=alt.Legend(orient="bottom")),
-        tooltip=["N", "Trabalho", "Exato"])
-    st.altair_chart(grafico.properties(height=240), width="stretch")
+    a, b = st.columns(2)
+    with a:
+        st.subheader("Força bruta · enumerar")
+        st.metric("Sequências candidatas", numero(total))
+        st.caption(f"8 opções em cada uma das {n} posições: 8^{n}. Cada candidata ainda precisa ser validada.")
+    with b:
+        st.subheader("FGE · calcular coeficientes")
+        st.metric("Parcelas das convoluções", numero(operacoes))
+        st.caption(f"8 fatores × (1 + 2 + … + {n+1}) parcelas. Os inteiros armazenam as contagens.")
+    destaque("A DIFERENÇA DE ESCALA", f"{numero(total)} candidatas para enumerar × {numero(operacoes)} parcelas para calcular. São cerca de {numero(total // operacoes)} candidatas por parcela.")
+    st.caption("Comparação de crescimento teórico, não de tempo: validar uma candidata e calcular uma parcela são operações diferentes. Isso não é um fator de aceleração medido.")
+    st.subheader("Exponencial × quadrático")
+    grafico_escala(n)
+    with st.expander("Comparar os valores exatos por tamanho"):
+        st.table(pd.DataFrame([{"Posições": i, "Candidatas · 8ⁿ": numero(8**i),
+                               "Parcelas · FGE": numero(8*(i+1)*(i+2)//2)}
+                              for i in [4, 6, 8, 10, 12, 15]]))
     st.success(f"FGE e filtro de paridade concordam: {numero(confirmacao)}. Nenhuma das {numero(total)} candidatas foi enumerada nesta etapa.")
     with st.expander("Ver código, complexidade e memória"):
         st.code('''# Convolução de FGE: guardamos contagens a[n], não frações.
@@ -555,7 +643,6 @@ for n in range(N + 1):
         st.write("Força bruta: O(Kⁿ · n). Produto FGE: O(K · n²) operações aritméticas, O(n) inteiros auxiliares. O custo de inteiros grandes também cresce.")
         st.write("A enumeração por gerador também evita guardar todas as senhas. A vantagem demonstrada é contar sem percorrer o espaço de busca, não uma obrigação de materializar tudo na RAM.")
         st.write("O filtro de paridade usa P+1 termos e é uma alternativa especializada para esta regra. A FGE fornece uma construção que pode ser adaptada a outras restrições.")
-    fala("Ao aumentar o tamanho, o número de candidatas cresce exponencialmente. O cálculo dos coeficientes cresce de forma polinomial em operações aritméticas. Estamos comparando trabalho teórico, não prometendo um tempo fixo de execução.")
 
 
 def mudar_etapa(delta):
@@ -573,6 +660,13 @@ def main():
     .destaque {border-left:4px solid #14b8a6; background:#14b8a612; padding:14px 20px; border-radius:8px; margin:16px 0;}
     .destaque small {font-weight:700; letter-spacing:.08em;}
     .destaque p {font-size:1.2rem; margin:6px 0;}
+    .quadro-bits {display:flex;gap:6px;flex-wrap:wrap;margin:12px 0;}
+    .bit {border:1px solid #64748b;border-radius:9px;min-width:38px;text-align:center;padding:6px;}
+    .bit small {display:block;font-size:.7rem;opacity:.8;} .bit b {font:700 1.7rem monospace;}
+    .bit.paridade {border-color:#14b8a6;background:#14b8a620;}
+    .bit.alterado {border:2px solid #f87171;background:#f8717120;}
+    .canal {display:flex;align-items:center;flex-direction:column;padding-top:35px;}
+    .canal span {font-size:2.5rem;color:#f59e0b;}
     .fichas {display:flex; gap:10px; flex-wrap:wrap; margin:16px 0;}
     .ficha {font:600 1.2rem monospace; border:1px solid #8b5cf680; background:#8b5cf614; border-radius:10px; padding:12px 16px;}
     @media(max-width:640px) {h1 {font-size:1.8rem !important;} .ficha {font-size:1rem; padding:9px;}}
@@ -581,7 +675,7 @@ def main():
     st.sidebar.caption("Equipe 7 · FGE e estruturas rotuladas")
     if st.sidebar.button("Recomeçar apresentação"):
         st.session_state["etapa_guia"] = 0
-        for chave in ("caso_senha", "g_k", "g_n", "g_p", "ids_guiados", "escala_n"):
+        for chave in ("caso_senha", "g_k", "g_n", "g_p", "ids_guiados", "escala_n", "mensagem_canal", "ruido_canal", "bits_canal"):
             st.session_state.pop(chave, None)
         st.rerun()
     if modo == "Laboratório completo":
@@ -598,14 +692,7 @@ def main():
     proxima.button("Próxima →", disabled=etapa == 4, type="primary", on_click=mudar_etapa, args=(1,), width="stretch")
     st.divider()
     [ideia, matematica, senhas_guiadas, comunicacao_guiada, escala_guiada][etapa]()
-    st.divider()
-    st.caption("Sugestão para 10 min: ideia 2 min · matemática 3 min · senhas 2 min · comunicação 1,5 min · escala 1,5 min. Metade do tempo é prática.")
-    with st.expander("Dúvidas da banca e referências"):
-        st.markdown("**FGO não conta ordem?** Conta, sim: 1/(1−Kx) gera Kⁿ. A comparação por símbolo deste app usa outra construção.")
-        st.markdown("**Por que n!?** O coeficiente na FGE é aₙ/n!; o produto distribui os rótulos por escolhas binomiais.")
-        st.markdown("**Mais regras tornam uma senha mais segura?** Não necessariamente. Reduzir possibilidades pode facilitar a busca; a distribuição e o comprimento também importam.")
-        st.markdown("**Pacotes sempre usam FGE?** Depende do objeto contado. Aqui são blocos sem ordem; um fluxo contíguo é outro problema.")
-        st.markdown("Referências: Flajolet e Sedgewick, [Analytic Combinatorics · cap. I e II](https://ac.cs.princeton.edu/home/); Sedgewick e Flajolet, [Generating Functions](https://aofa.cs.princeton.edu/30gf/).")
+
 
 
 if __name__ == "__main__":
